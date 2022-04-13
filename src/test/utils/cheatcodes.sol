@@ -63,6 +63,8 @@ interface CheatCodes {
 
     function expectRevert(bytes4) external;
 
+
+    function expectRevert() external;
     // Record all storage reads and writes
     function record() external;
 
