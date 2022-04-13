@@ -3,6 +3,7 @@ pragma solidity 0.5.0;
 import "ds-test/test.sol";
 import "../PrizeLinkedAccountVault.sol";
 import "forge-std/console.sol";
+import "forge-std/stdlib.sol";
 import {CheatCodes} from "./utils/cheatcodes.sol";
 
 import {SandboxGluwacoin} from "../mocks/SandboxGluwacoin.sol";
@@ -10,10 +11,10 @@ import "../libs/GluwaAccountModel.sol";
 import "../abstracts/GluwaPrizeDraw.sol";
 import "./helpers.sol";
 
-
 contract PrizedLinkTesting is DSTest {
     using console for console;
-    CheatCodes cheats = CheatCodes(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
+    Vm public constant vm = Vm(HEVM_ADDRESS);
+    //CheatCodes cheats = CheatCodes(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     PrizeLinkedAccountVault prizeLinkedAccount;
     SandboxGluwacoin gluwacoin;
     Helpers helpers;
@@ -42,7 +43,7 @@ contract PrizedLinkTesting is DSTest {
     );
 
     function setUp() public {
-        cheats.warp(1);
+        vm.warp(1);
 
         owner = address(this);
 
@@ -72,7 +73,7 @@ contract PrizedLinkTesting is DSTest {
     function mintAndApprove(address _to, uint256 _amount) public {
         gluwacoin.mint(_to, _amount);
 
-        cheats.prank(_to);
+        vm.prank(_to);
         gluwacoin.approve(address(prizeLinkedAccount), _amount);
     }
 
@@ -84,17 +85,6 @@ contract PrizedLinkTesting is DSTest {
         (uint8 cutoffHour, uint8 cutoffMinute, , ) = prizeLinkedAccount
             .getGluwaPrizeDrawSettings();
         return helpers.getDrawTimestamp(txnTimestamp, cutoffHour, cutoffMinute);
-    }
-
-    function multipleDeposits(bytes32 depositHash) public {      
-
-        cheats.expectEmit(true, false, false, false);
-        emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
-
-        cheats.expectEmit(true, false, false, false);
-        emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
 
     function testTokenBalances() public {
@@ -121,7 +111,7 @@ contract PrizedLinkTesting is DSTest {
     function testCreatePrizeLinkedDrawTimestamp() public {
         uint256 drawTimestamp = getDrawTimestamp(now);
 
-        cheats.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit TicketCreated(drawTimestamp, 0, user1, 0, 0);
         prizeLinkedAccount.createPrizedLinkAccount(
             user1,
@@ -139,7 +129,7 @@ contract PrizedLinkTesting is DSTest {
 
         uint256 drawTimestamp = getDrawTimestamp(now);
 
-        cheats.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, false);
         emit TicketCreated(drawTimestamp, 0, user1, 0, 0);
         prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
@@ -150,7 +140,7 @@ contract PrizedLinkTesting is DSTest {
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-        
+
         (uint256 accountIdx, , , , , , , ) = prizeLinkedAccount
             .getSavingAcountFor(user1);
 
@@ -162,21 +152,22 @@ contract PrizedLinkTesting is DSTest {
             user1
         );
 
-        cheats.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, false);
         emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);   
+        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
 
-    
-    function testSubsequentDepositHashesDontMatch() public {
+    function testMultipleDepositsTotal() public {
         prizeLinkedAccount.createPrizedLinkAccount(
             user1,
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-        
-        (uint256 accountIdx, , , , , , , ) = prizeLinkedAccount
+        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
+
+        (uint256 accountIdx, , , , uint256 balance, , , ) = prizeLinkedAccount
             .getSavingAcountFor(user1);
+        assertTrue(balance == DEPOSIT_AMOUNT * 2);
 
         bytes32 depositHash = GluwaAccountModel.generateHash(
             accountIdx,
@@ -185,9 +176,12 @@ contract PrizedLinkTesting is DSTest {
             address(prizeLinkedAccount),
             user1
         );
-
-        cheats.expectRevert(bytes("test"));
-        multipleDeposits(depositHash);    
+        (, , , , uint256 depositAmount) = prizeLinkedAccount.getDeposit(
+            depositHash
+        );
+        console.logUint(depositAmount);
+        console.logUint(DEPOSIT_AMOUNT * 2);
+        assertTrue(depositAmount == DEPOSIT_AMOUNT * 2);
     }
 
     function testEligbleAddressDrawsIsZero() public {
@@ -213,7 +207,7 @@ contract PrizedLinkTesting is DSTest {
         );
         uint256 drawTimestamp = getDrawTimestamp(now);
 
-        cheats.warp(drawTimestamp);
+        vm.warp(drawTimestamp);
         uint96[] memory user1Draws = prizeLinkedAccount
             .getTickerIdsByOwnerAndDrawFor(drawTimestamp, user1);
         //console.logAddress(eligibleAddressesPending[0]);
@@ -229,7 +223,7 @@ contract PrizedLinkTesting is DSTest {
         prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT / 2);
         uint256 drawTimestamp = getDrawTimestamp(now);
 
-        cheats.warp(drawTimestamp);
+        vm.warp(drawTimestamp);
         uint96[] memory user1Draws = prizeLinkedAccount
             .getTickerIdsByOwnerAndDrawFor(drawTimestamp, user1);
         assert(user1Draws.length == 2);
