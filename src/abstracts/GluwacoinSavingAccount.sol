@@ -194,7 +194,7 @@ contract GluwacoinSavingAccount is Initializable, Context {
             account.earning += amount;
         } 
         bytes32 depositHash = GluwaAccountModel.generateHash(
-            account.idx,
+            _depositIndex.nextIdx,
             dateTime,
             amount,
             address(this),
