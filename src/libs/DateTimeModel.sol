@@ -1,11 +1,11 @@
 pragma solidity ^0.5.0;
 
 library DateTimeModel {
-    uint256 internal constant YEAR_IN_SECOND = 31536000;
-    uint256 internal constant LEAP_YEAR_IN_SECOND = 31622400;
-    uint256 internal constant DAY_IN_SECOND = 86400;
-    uint256 internal constant HOUR_IN_SECOND = 3600;
-    uint256 internal constant MINUTE_IN_SECOND = 60;
+    uint64 internal constant YEAR_IN_SECOND = 31536000;
+    uint64 internal constant LEAP_YEAR_IN_SECOND = 31622400;
+    uint64 internal constant DAY_IN_SECOND = 86400;
+    uint64 internal constant HOUR_IN_SECOND = 3600;
+    uint64 internal constant MINUTE_IN_SECOND = 60;
 
     uint16 internal constant START_YEAR = 1970;
 
@@ -33,7 +33,7 @@ library DateTimeModel {
         return uint16(year / 4 + year / 400 - year / 100);
     }
 
-    function getYear(uint256 timeStamp) internal pure returns (uint16) {
+    function getYear(uint64 timeStamp) internal pure returns (uint16) {
         uint256 year = START_YEAR + timeStamp / YEAR_IN_SECOND;
         uint256 totalLeapYears = getTotalLeapYearBefore(year) -
             getTotalLeapYearBefore(START_YEAR);
@@ -69,15 +69,15 @@ library DateTimeModel {
         }
     }
 
-    function getHour(uint256 timeStamp) internal pure returns (uint8) {
+    function getHour(uint64 timeStamp) internal pure returns (uint8) {
         return uint8((timeStamp / 3600) % 24);
     }
 
-    function getMinute(uint256 timeStamp) internal pure returns (uint8) {
+    function getMinute(uint64 timeStamp) internal pure returns (uint8) {
         return uint8((timeStamp / 60) % 60);
     }
 
-    function getSecond(uint256 timeStamp) internal pure returns (uint8) {
+    function getSecond(uint64 timeStamp) internal pure returns (uint8) {
         return uint8(timeStamp % 60);
     }
 
@@ -88,7 +88,7 @@ library DateTimeModel {
         uint8 hour,
         uint8 minute,
         uint8 second
-    ) internal pure returns (uint256 timeStamp) {
+    ) internal pure returns (uint64 timeStamp) {
         timeStamp = second;
         timeStamp += MINUTE_IN_SECOND * (minute);
         timeStamp += HOUR_IN_SECOND * (hour);
@@ -126,7 +126,7 @@ library DateTimeModel {
         }
     }
 
-    function toDateTime(uint256 timeStamp)
+    function toDateTime(uint64 timeStamp)
         internal
         pure
         returns (DateTime memory dateTime)

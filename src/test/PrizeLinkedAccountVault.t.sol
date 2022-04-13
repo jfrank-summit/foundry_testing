@@ -4,7 +4,6 @@ import "ds-test/test.sol";
 import "../PrizeLinkedAccountVault.sol";
 import "forge-std/console.sol";
 import "forge-std/stdlib.sol";
-import {CheatCodes} from "./utils/cheatcodes.sol";
 
 import {SandboxGluwacoin} from "../mocks/SandboxGluwacoin.sol";
 import "../libs/GluwaAccountModel.sol";
@@ -77,7 +76,7 @@ contract PrizedLinkTesting is DSTest {
         gluwacoin.approve(address(prizeLinkedAccount), _amount);
     }
 
-    function getDrawTimestamp(uint256 txnTimestamp)
+    function getDrawTimestamp(uint64 txnTimestamp)
         public
         view
         returns (uint256)
@@ -100,10 +99,12 @@ contract PrizedLinkTesting is DSTest {
             depositer
         );
     }
+
+
     function testTokenBalances() public {
         assertTrue(gluwacoin.balanceOf(owner) == MINT_AMOUNT);
         assertTrue(gluwacoin.balanceOf(user1) == MINT_AMOUNT);
-        assertTrue(gluwacoin.balanceOf(user1) == MINT_AMOUNT);
+        assertTrue(gluwacoin.balanceOf(user2) == MINT_AMOUNT);
     }
 
     function testTokenAllowance() public {
@@ -121,11 +122,14 @@ contract PrizedLinkTesting is DSTest {
         );
     }
 
-    function testCreatePrizeLinkedDrawTimestamp() public {
-        uint256 drawTimestamp = getDrawTimestamp(now);
+    function testCreatePrizeLinkedDrawTimestamp(uint256 currentTime) public {
+        //why 2068084828800? is this a potential vulnerability? 
+        vm.assume(currentTime < 2068084828800 && currentTime > 0);
+        vm.warp(currentTime);
+        uint256 drawTimestamp = getDrawTimestamp(uint64(currentTime));
 
         vm.expectEmit(true, false, false, false);
-        emit TicketCreated(drawTimestamp, 0, user1, 0, 0);
+        emit TicketCreated(drawTimestamp, 1, user1, 0, 0);
         prizeLinkedAccount.createPrizedLinkAccount(
             user1,
             DEPOSIT_AMOUNT,
@@ -140,7 +144,7 @@ contract PrizedLinkTesting is DSTest {
             abi.encodePacked(user1)
         );
 
-        uint256 drawTimestamp = getDrawTimestamp(now);
+        uint256 drawTimestamp = getDrawTimestamp(uint64(now));
 
         vm.expectEmit(true, false, false, false);
         emit TicketCreated(drawTimestamp, 0, user1, 0, 0);
@@ -206,7 +210,7 @@ contract PrizedLinkTesting is DSTest {
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-        uint256 drawTimestamp = getDrawTimestamp(now);
+        uint256 drawTimestamp = getDrawTimestamp(uint64(now));
 
         assertTrue(
             prizeLinkedAccount
@@ -221,7 +225,7 @@ contract PrizedLinkTesting is DSTest {
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-        uint256 drawTimestamp = getDrawTimestamp(now);
+        uint256 drawTimestamp = getDrawTimestamp(uint64(now));
 
         vm.warp(drawTimestamp);
         uint96[] memory user1Draws = prizeLinkedAccount
@@ -237,7 +241,7 @@ contract PrizedLinkTesting is DSTest {
             abi.encodePacked(user1)
         );
         prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT / 2);
-        uint256 drawTimestamp = getDrawTimestamp(now);
+        uint256 drawTimestamp = getDrawTimestamp(uint64(now));
 
         vm.warp(drawTimestamp);
         uint96[] memory user1Draws = prizeLinkedAccount

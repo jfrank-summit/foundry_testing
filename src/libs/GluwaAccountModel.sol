@@ -24,7 +24,7 @@ library GluwaAccountModel {
         uint256 accountIdx;
         // address of the Account owner
         address owner;
-        uint256 creationDate;
+        uint64 creationDate;
         uint256 amount;
     }
 
@@ -34,7 +34,7 @@ library GluwaAccountModel {
         bytes32 accountHash;
         // address of the Account owner
         address owner;        
-        uint256 creationDate;
+        uint64 creationDate;
         uint256 balance;
         uint256 earning;
         // Different states a Account can be in

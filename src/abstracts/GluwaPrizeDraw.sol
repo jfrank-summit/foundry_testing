@@ -190,10 +190,10 @@ contract GluwaPrizeDraw is Initializable, Context {
         }
     }
 
-    function _calculateDrawTime(uint256 txnTimeStamp)
+    function _calculateDrawTime(uint64 txnTimeStamp)
         internal
         view
-        returns (uint256 drawTimeStamp)
+        returns (uint64 drawTimeStamp)
     {
         DateTimeModel.DateTime memory drawDateTime = DateTimeModel.toDateTime(
             txnTimeStamp
@@ -242,7 +242,7 @@ contract GluwaPrizeDraw is Initializable, Context {
 
     function _createTicketForDeposit(
         address owner_,
-        uint256 depositTimeStamp,
+        uint64 depositTimeStamp,
         uint256 depositAmount,
         uint256 issuedTicket
     ) internal returns (bool) {

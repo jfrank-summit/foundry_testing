@@ -92,7 +92,7 @@ contract PrizeLinkedAccountVault is
         _prizePayingStatus[drawTimeStamp] = true;
         if (winner != address(0)) {
             _totalPrizeBroughForward = 0;
-            _depositPrizedLinkAccount(winner, prize, now, true);
+            _depositPrizedLinkAccount(winner, prize, uint64(now), true);
         } else {
             _totalPrizeBroughForward = _totalPrizeBroughForward.add(prize);
         }
@@ -147,7 +147,7 @@ contract PrizeLinkedAccountVault is
         (, bytes32 depositHash) = _createSavingAccount(
             owner,
             amount,
-            now,
+            uint64(now),
             securityHash
         );
         bool isSuccess = _createPrizedLinkTickets(depositHash);
@@ -163,7 +163,7 @@ contract PrizeLinkedAccountVault is
         onlyOperator
         returns (bool)
     {
-        bool isSuccess = _depositPrizedLinkAccount(owner, amount, now, false);
+        bool isSuccess = _depositPrizedLinkAccount(owner, amount, uint64(now), false);
         require(
             _token.transferFrom(owner, address(this), amount),
             "GluwaPrizeLinkedAccount: Unable to send amount to deposit to a Saving Account"
@@ -174,7 +174,7 @@ contract PrizeLinkedAccountVault is
     function _depositPrizedLinkAccount(
         address owner,
         uint256 amount,
-        uint256 dateTime,
+        uint64 dateTime,
         bool isEarning
     ) internal returns (bool) {
         bytes32 depositHash = _deposit(owner, amount, dateTime, isEarning);
@@ -246,7 +246,7 @@ contract PrizeLinkedAccountVault is
         uint256 amount
     ) internal returns (bool) {
         uint256 newIssued = _convertDepositToTotalTicket(amount);
-        uint256 next2ndDraw = _calculateDrawTime(now);
+        uint256 next2ndDraw = _calculateDrawTime(uint64(now));
         uint256 nextDraw = next2ndDraw.sub(86400);
         _removeTicket(owner, next2ndDraw, amount, newIssued);
         if (

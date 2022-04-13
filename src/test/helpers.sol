@@ -4,7 +4,7 @@ import {DateTimeModel} from "../libs/DateTimeModel.sol";
 
 contract Helpers {
 
-    function getDrawTimestamp(uint256 txnTimestamp, uint8 cutoffHour, uint8 cutoffMinute) public pure returns (uint) {
+    function getDrawTimestamp(uint64 txnTimestamp, uint8 cutoffHour, uint8 cutoffMinute) public pure returns (uint) {
         DateTimeModel.DateTime memory drawDateTime = DateTimeModel.toDateTime(
             txnTimestamp
         );

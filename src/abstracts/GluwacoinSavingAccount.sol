@@ -19,7 +19,7 @@ contract GluwacoinSavingAccount is Initializable, Context {
     address[] internal _owners;
 
     HashMapIndex.HashMapping private _savingAccountIndex;
-    HashMapIndex.HashMapping private _depositIndex;
+    HashMapIndex.HashMapping private _depositIndex; 
 
     uint32 internal _standardInterestRate;
     /**
@@ -108,7 +108,7 @@ contract GluwacoinSavingAccount is Initializable, Context {
     function _createSavingAccount(
         address owner_,
         uint256 initialDeposit,
-        uint256 startDate,
+        uint64 startDate,
         bytes memory identityHash
     ) internal returns (bytes32, bytes32) {
         _validateSavingBalance(initialDeposit);
@@ -123,7 +123,7 @@ contract GluwacoinSavingAccount is Initializable, Context {
         require(!_usedIdentityHash[identityHash],
             "GluwaSavingAccount: Identity hash is already used"
         );
-
+        
         bytes32 accountHash_ = GluwaAccountModel.generateHash(
             _savingAccountIndex.nextIdx,
             startDate,
@@ -176,7 +176,7 @@ contract GluwacoinSavingAccount is Initializable, Context {
     function _deposit(
         address owner,
         uint256 amount,
-        uint256 dateTime,
+        uint64 dateTime,
         bool isEarning
     ) internal returns (bytes32) {
         _validateSavingBalance(amount);
