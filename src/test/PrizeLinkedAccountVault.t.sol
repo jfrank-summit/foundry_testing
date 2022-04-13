@@ -87,6 +87,19 @@ contract PrizedLinkTesting is DSTest {
         return helpers.getDrawTimestamp(txnTimestamp, cutoffHour, cutoffMinute);
     }
 
+    function generatedDepositHash(uint256 amount, uint256 depositIndex, address depositer)
+        public
+        view
+        returns (bytes32)
+    {
+       return GluwaAccountModel.generateHash(
+            depositIndex,
+            now,
+            amount,
+            address(prizeLinkedAccount),
+            depositer
+        );
+    }
     function testTokenBalances() public {
         assertTrue(gluwacoin.balanceOf(owner) == MINT_AMOUNT);
         assertTrue(gluwacoin.balanceOf(user1) == MINT_AMOUNT);
@@ -134,37 +147,20 @@ contract PrizedLinkTesting is DSTest {
         prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
 
-    function qtestDepositCreatedMatches() public {
+    function testCreatePrizeDepositCreatedMatches() public {
+        bytes32 depositHash = generatedDepositHash(DEPOSIT_AMOUNT, 1, user1);
+        vm.expectEmit(true, true, false, false);
+        emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
+
         prizeLinkedAccount.createPrizedLinkAccount(
             user1,
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-
-        (uint256 accountIdx, , , , , , , ) = prizeLinkedAccount
-            .getSavingAcountFor(user1);
-
-        bytes32 depositHash = GluwaAccountModel.generateHash(
-            accountIdx,
-            now,
-            DEPOSIT_AMOUNT,
-            address(prizeLinkedAccount),
-            user1
-        );
-
-        vm.expectEmit(true, true, false, false);
-        emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
 
     function testMultipleDepositsSameBlockDifferentHash() public {
-        bytes32 depositHash1 = GluwaAccountModel.generateHash(
-            1,
-            now,
-            DEPOSIT_AMOUNT,
-            address(prizeLinkedAccount),
-            user1
-        );
+        bytes32 depositHash1 = generatedDepositHash(DEPOSIT_AMOUNT, 1, user1);
         vm.expectEmit(true, false, false, false);
         emit DepositCreated(depositHash1, user1, DEPOSIT_AMOUNT);
         prizeLinkedAccount.createPrizedLinkAccount(
@@ -173,57 +169,35 @@ contract PrizedLinkTesting is DSTest {
             abi.encodePacked(user1)
         );
         
-        bytes32 depositHash2 = GluwaAccountModel.generateHash(
-            2,
-            now,
-            DEPOSIT_AMOUNT,
-            address(prizeLinkedAccount),
-            user1
-        );
+        bytes32 depositHash2 = generatedDepositHash(DEPOSIT_AMOUNT, 2, user1);
 
         vm.expectEmit(true, false, false, false);
         emit DepositCreated(depositHash2, user1, DEPOSIT_AMOUNT);
         prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
     }
 
-    function qtestMultipleDepositsTotal() public {
+    function testMultipleDepositsTotal() public {
         //Deposit #1
+        bytes32 depositHash1 = generatedDepositHash(DEPOSIT_AMOUNT, 1, user1);
         prizeLinkedAccount.createPrizedLinkAccount(
             user1,
             DEPOSIT_AMOUNT,
             abi.encodePacked(user1)
         );
-        (uint256 accountIdx, , , , , , , ) = prizeLinkedAccount
-            .getSavingAcountFor(user1);
+        (, , , , uint256 depositAmount1) = prizeLinkedAccount.getDeposit(
+            depositHash1
+        );
 
         //Deposit #2
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
-
-        bytes32 depositHash = GluwaAccountModel.generateHash(
-            1,
-            now,
-            DEPOSIT_AMOUNT,
-            address(prizeLinkedAccount),
-            user1
+        bytes32 depositHash2 = generatedDepositHash(DEPOSIT_AMOUNT, 2, user1);
+        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT); 
+        (, , , , uint256 depositAmount2) = prizeLinkedAccount.getDeposit(
+            depositHash2
         );
-
-        vm.expectEmit(true, false, false, false);
-        emit DepositCreated(depositHash, user1, DEPOSIT_AMOUNT);
-        //Deposit #3
-        prizeLinkedAccount.depositPrizedLinkAccount(user1, DEPOSIT_AMOUNT);
-
-        (, , , , uint256 depositAmount) = prizeLinkedAccount.getDeposit(
-            depositHash
-        );
-        (, , , , uint256 balance, , , ) = prizeLinkedAccount.getSavingAcountFor(
-            user1
-        );
-        console.logBytes32(depositHash);
-        console.logUint(balance);
-        console.logUint(depositAmount);
-
-        //assertTrue(depositAmount > DEPOSIT_AMOUNT);
-        assertTrue(balance == DEPOSIT_AMOUNT * 3);
+         (, , , , uint256 balance, , , ) = prizeLinkedAccount
+            .getSavingAcountFor(user1);
+        assertTrue(depositAmount1 + depositAmount2 == DEPOSIT_AMOUNT * 2);
+        assertTrue(balance == DEPOSIT_AMOUNT * 2);
     }
 
     function testEligbleAddressDrawsIsZero() public {
